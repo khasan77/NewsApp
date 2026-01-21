@@ -36,6 +36,12 @@ final class ArticleListViewController: UIViewController {
     
     private let customNavigationLeftView = SelectedCategoryView()
     
+    private lazy var refreshControl: UIRefreshControl = {
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector(refreshData), for: .valueChanged)
+        return refreshControl
+    }()
+    
     // MARK: - Init
     
     init(imagesProvider: ImagesProvider) {
@@ -57,7 +63,9 @@ final class ArticleListViewController: UIViewController {
         
         tableView.dataSource = self
         tableView.delegate = self
+        
         tableView.register(ArticleListTableViewCell.self, forCellReuseIdentifier: ArticleListTableViewCell.identifier)
+        tableView.refreshControl = refreshControl
         
         setupLayout()
         
@@ -83,14 +91,27 @@ final class ArticleListViewController: UIViewController {
             guard let self = self else { return }
             
             DispatchQueue.main.async {
-                self.items += articles
+                
+                if self.page == 1 {
+                    self.items = articles
+                } else {
+                    self.items += articles
+                }
+                
                 self.activityIndicator.stopAnimating()
                 self.tableView.reloadData()
+                self.refreshControl.endRefreshing()
                 self.tableView.tableFooterView = nil
                 self.tableView.tableHeaderView = nil
             }
         }
-    } 
+    }
+    
+    @objc
+    private func refreshData() {
+        page = 1
+        fetchData()
+    }
     
     // MARK: - Layout
     
